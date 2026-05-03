@@ -1,0 +1,10 @@
+__pycache__/
+.env
+.venv/
+*.pyc
+.vscode/
+.idea/
+downloaded_files/
+venv/
+test.py
+saver.py
