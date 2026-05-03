@@ -2,7 +2,6 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, BigInteger, Integer, String, DateTime, func, text, Text, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from schemas import db_schemas
-import enum
 import uuid
 
 Base = declarative_base()

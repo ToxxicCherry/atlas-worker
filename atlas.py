@@ -1,19 +1,12 @@
-from parsers.wb_parser import WBParser
+from parsers import ParserMaker
 from db import db_actions
 from schemas.parsers_schemas import Item
-from schemas import db_schemas
 from loguru import logger
 import asyncio
 
 class Atlas:
     def __init__(self):
-        self.parsers = {
-
-            db_schemas.MarketPlace.wildberries: {
-                db_schemas.TaskType.fetch_cards: WBParser
-            },
-
-        }
+        self.manager = ParserMaker()
         self.max_workers = 1
 
 
@@ -27,15 +20,10 @@ class Atlas:
                 await asyncio.sleep(5)
                 continue
 
-            parser_class = self.parsers.get(task.source).get(task.type)
-
-            if not parser_class:
-                raise ValueError(f"Нет реализации парсера для {task.source}, {task.type}")
-
 
             while True:
                 try:
-                    parser = parser_class(task=task)
+                    parser = self.manager.choose(task)
                     result: list[Item] = await parser.fetch_all_cards()
                 except IndexError as e:
                     if str(e) == 'pop from empty list':

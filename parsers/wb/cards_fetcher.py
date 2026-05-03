@@ -14,7 +14,7 @@ from db import models
 
 
 
-class WBParser:
+class WBCardsFetcher:
     def __init__(self, task: models.Task):
         if task.type != db_schemas.TaskType.fetch_cards:
             raise ValueError(f'{self.__class__.__name__} ожидает {db_schemas.TaskType.fetch_cards}. Получил {task.type}' )

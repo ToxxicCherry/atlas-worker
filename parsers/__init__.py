@@ -1,1 +1,2 @@
-from . import wb_parser
+from .wb import cards_fetcher
+from .manager import ParserMaker
