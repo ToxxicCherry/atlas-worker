@@ -1,15 +1,26 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, BigInteger, Integer, String, DateTime, func, text, Text, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, BigInteger, Integer, String, DateTime, func, text, Text, Enum as SQLEnum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from schemas import db_schemas
 import uuid
 
 Base = declarative_base()
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()"), index=True)
+    username = Column(String, nullable=False, unique=True)
+    email = Column(String, nullable=False, unique=True, index=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Task(Base):
     __tablename__ = 'tasks'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=text("gen_random_uuid()"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     source = Column(SQLEnum(db_schemas.MarketPlace, name='market_place'), nullable=False, default=db_schemas.MarketPlace.wildberries)
     type = Column(SQLEnum(db_schemas.TaskType), nullable=False, default=db_schemas.TaskType.fetch_cards)
     status = Column(SQLEnum(db_schemas.TaskStatus, name='task_status'), default=db_schemas.TaskStatus.pending)
@@ -28,3 +39,6 @@ class Cookie(Base):
     source = Column(SQLEnum(db_schemas.MarketPlace, name="market_place"), nullable=False, default=db_schemas.MarketPlace.wildberries)
     value = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+

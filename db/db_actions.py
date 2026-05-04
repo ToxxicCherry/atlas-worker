@@ -72,6 +72,7 @@ async def create_task(task: db_schemas.CreateTaskSchema):
         query = (
             insert(models.Task)
             .values(
+                user_id=task.user_id,
                 source=task.source,
                 type=task.task_type,
                 payload=task.payload.model_dump()
@@ -81,6 +82,17 @@ async def create_task(task: db_schemas.CreateTaskSchema):
         result = await session.execute(query)
         created_task = result.scalar_one_or_none()
         return created_task
+
+async def create_user(user_schema: db_schemas.UserSchema):
+    async with database.get_db() as session:
+        query = (
+            insert(models.User)
+            .values(**user_schema.model_dump(exclude={'id', 'created_at'})).returning(models.User)
+        )
+
+        result = await session.execute(query)
+        created_user = result.scalar_one_or_none()
+        return created_user
 
 
 
