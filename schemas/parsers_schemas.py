@@ -118,3 +118,9 @@ class Item(BaseModel):
     supplier_rating: float = Field(serialization_alias='Рейтинг продавца')
     weight: float = Field(serialization_alias='Вес')
     wh: int = Field(description='ID склада', serialization_alias='ID скалада')
+
+
+
+
+class ParseResult(BaseModel):
+    result: Union[list[Item]] = Field()

@@ -6,6 +6,7 @@ from clients.wb_client import WBClient
 from typing import Callable
 from schemas.parsers_schemas import FilterData, Filter, TaskForWorker, Item
 from schemas import db_schemas
+from parsers.base import BaseParser
 from pydantic import TypeAdapter
 from typing import List
 from more_itertools import unique_everseen
@@ -14,7 +15,7 @@ from db import models
 
 
 
-class WBCardsFetcher:
+class WBCardsFetcher(BaseParser):
     def __init__(self, task: models.Task):
         if task.type != db_schemas.TaskType.fetch_cards:
             raise ValueError(f'{self.__class__.__name__} ожидает {db_schemas.TaskType.fetch_cards}. Получил {task.type}' )
@@ -290,7 +291,7 @@ class WBCardsFetcher:
         result = list(unique_everseen(items, key=lambda item: item.id))
         return result
 
-    async def fetch_all_cards(self) -> list[Item]:
+    async def parse(self) -> list[Item]:
         await self.api.change_cookie()
         best_filter = await self.create_best_filter()
         await self.prepare_queue_for_catalog(best_filter)

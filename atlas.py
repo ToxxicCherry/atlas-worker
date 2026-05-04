@@ -24,7 +24,7 @@ class Atlas:
             while True:
                 try:
                     parser = self.manager.choose(task)
-                    result: list[Item] = await parser.fetch_all_cards()
+                    result: list[Item] = await parser.parse()
                 except IndexError as e:
                     if str(e) == 'pop from empty list':
                         logger.error(e)
