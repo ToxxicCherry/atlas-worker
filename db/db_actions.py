@@ -1,9 +1,11 @@
-from sqlalchemy import select, update, asc, desc, text, delete, insert
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import select, update, asc, desc, text, delete, func
+from sqlalchemy.dialects.postgresql import UUID, insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from db import models, database
 from loguru import logger
 from schemas import db_schemas
+from schemas.parsers_schemas import Item
 
 
 
@@ -52,20 +54,19 @@ async def consume_actual_cookie(market_place: db_schemas.MarketPlace):
 
 
 
-async def task_status_completed(task_id: UUID, total: int):
-    async with database.get_db() as session:
+async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schemas.TaskStatus, total: int = 0):
 
-        query = (
-            update(models.Task)
-            .where(models.Task.id == task_id)
-            .values(
-                status=db_schemas.TaskStatus.completed,
-                total_found=total,
-                finished_at=datetime.now(timezone.utc),
-            )
+    query = (
+        update(models.Task)
+        .where(models.Task.id == task_id)
+        .values(
+            status=status,
+            total_found=total,
+            finished_at=datetime.now(timezone.utc),
         )
+    )
 
-        await session.execute(query)
+    await session.execute(query)
 
 async def create_task(task: db_schemas.CreateTaskSchema):
     async with database.get_db() as session:
@@ -93,6 +94,51 @@ async def create_user(user_schema: db_schemas.UserSchema):
         result = await session.execute(query)
         created_user = result.scalar_one_or_none()
         return created_user
+
+
+async def save_batch(session: AsyncSession, batch: list[Item]):
+    product_mappings = [
+        item.model_dump(exclude={'sizes'}, by_alias=False)
+        for item in batch
+    ]
+
+    product_ids = [p['id'] for p in product_mappings]
+
+    insert_query = insert(models.Product).values(product_mappings)
+
+    update_dict = {
+        col.name: insert_query.excluded[col.name]
+        for col in models.Product.__table__.columns
+        if col.name not in ['id', 'created_at']
+    }
+
+    update_dict['updated_at'] = func.now()
+
+    upsert_query = insert_query.on_conflict_do_update(
+        index_elements=['id'],
+        set_=update_dict
+    )
+    await session.execute(upsert_query)
+
+    delete_sizes_query = (
+        delete(models.ProductSize).where(models.ProductSize.product_id.in_(product_ids))
+    )
+    await session.execute(delete_sizes_query)
+
+    all_sizes_mapping = []
+    for item in batch:
+        if item.sizes:
+            for size in item.sizes:
+                size_dict = size.model_dump(by_alias=False, exclude={'discount_amount', 'discount_percent'})
+                size_dict['product_id'] = item.id
+                all_sizes_mapping.append(size_dict)
+
+    if all_sizes_mapping:
+        await session.execute(
+            insert(models.ProductSize).values(all_sizes_mapping)
+        )
+
+    await session.flush()
 
 
 

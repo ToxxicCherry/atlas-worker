@@ -1,13 +1,15 @@
 from parsers import ParserMaker
 from db import db_actions
-from schemas.parsers_schemas import Item
+from schemas.parsers_schemas import Item, ParseResult
 from loguru import logger
+from saver import Saver
 import asyncio
 
 class Atlas:
     def __init__(self):
         self.manager = ParserMaker()
         self.max_workers = 1
+        self.saver = Saver()
 
 
     async def worker(self):
@@ -24,7 +26,7 @@ class Atlas:
             while True:
                 try:
                     parser = self.manager.choose(task)
-                    result: list[Item] = await parser.parse()
+                    result: ParseResult = await parser.parse()
                 except IndexError as e:
                     if str(e) == 'pop from empty list':
                         logger.error(e)
@@ -34,10 +36,9 @@ class Atlas:
                 except BaseException as e:
                     logger.error(e)
                 else:
-                    await db_actions.task_status_completed(task.id, total=len(result))
+                    await self.saver.save(result)
                     break
 
-            #items_to_csv(result, task.search_query)
 
 
 

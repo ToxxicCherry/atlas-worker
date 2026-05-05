@@ -7,4 +7,3 @@ __pycache__/
 downloaded_files/
 venv/
 test.py
-saver.py
