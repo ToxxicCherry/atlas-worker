@@ -96,7 +96,7 @@ async def create_user(user_schema: db_schemas.UserSchema):
         return created_user
 
 
-async def save_batch(session: AsyncSession, batch: list[Item]):
+async def save_batch(session: AsyncSession, batch: list[Item], task_id: UUID):
     product_mappings = [
         item.model_dump(exclude={'sizes'}, by_alias=False)
         for item in batch
@@ -119,6 +119,13 @@ async def save_batch(session: AsyncSession, batch: list[Item]):
         set_=update_dict
     )
     await session.execute(upsert_query)
+
+    task_product_mappings = [
+        {'task_id': task_id, 'product_id': item.id} for item in batch
+    ]
+
+    tp_insert = insert(models.TaskProduct).values(task_product_mappings).on_conflict_do_nothing()
+    await session.execute(tp_insert)
 
     delete_sizes_query = (
         delete(models.ProductSize).where(models.ProductSize.product_id.in_(product_ids))

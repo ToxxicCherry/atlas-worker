@@ -21,13 +21,14 @@ class Saver:
                 break
             yield chunk
 
-    async def fetch_cards_save(self, session: AsyncSession, payload: FetchCardsResult):
+    async def fetch_cards_save(self, session: AsyncSession, parse_result: ParseResult):
         batch_size = 1000
         processed_count = 0
+        payload = parse_result.payload
 
         for batch in self.chunked_iterable(payload.items, batch_size):
             try:
-                await save_batch(session, batch)
+                await save_batch(session, batch, parse_result.task_id)
                 processed_count += len(batch)
                 logger.success(f"Сохранено {processed_count} из {len(payload.items)}")
             except Exception as e:
@@ -38,12 +39,14 @@ class Saver:
 
 
     async def save(self, parse_result: ParseResult):
+        total_found = 0
+
         async with self.session_maker() as session:
 
             payload = parse_result.payload
             if isinstance(payload, FetchCardsResult):
                 total_found = len(payload.items)
-                await self.fetch_cards_save(session, payload)
+                await self.fetch_cards_save(session, parse_result)
 
 
 

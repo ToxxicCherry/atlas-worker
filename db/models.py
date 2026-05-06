@@ -66,6 +66,13 @@ class Product(Base):
     sizes = relationship('ProductSize', backref='product', cascade='all, delete-orphan')
 
 
+class TaskProduct(Base):
+    __tablename__ = 'task_products'
+
+    task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete='CASCADE'), primary_key=True)
+    product_id = Column(BigInteger, ForeignKey('products.id', ondelete='CASCADE'), primary_key=True)
+
+
 
 class Cookie(Base):
     __tablename__ = "cookies"
