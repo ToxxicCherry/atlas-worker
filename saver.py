@@ -28,7 +28,7 @@ class Saver:
 
         for batch in self.chunked_iterable(payload.items, batch_size):
             try:
-                await save_batch(session, batch, parse_result.task_id)
+                await save_batch(batch, parse_result.task_id)
                 processed_count += len(batch)
                 logger.success(f"Сохранено {processed_count} из {len(payload.items)}")
             except Exception as e:

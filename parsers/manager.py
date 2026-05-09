@@ -1,4 +1,4 @@
-from db.models import Task
+from db.models import TaskModel
 from schemas.db_schemas import MarketPlace, TaskType
 from parsers.wb import WBCardsFetcher
 
@@ -16,7 +16,7 @@ class ParserMaker:
 
         }
 
-    def choose(self, task: Task):
+    def choose(self, task: TaskModel):
         parser = self.parsers.get(task.source).get(task.type)
 
         if not parser:

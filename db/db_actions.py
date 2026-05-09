@@ -1,4 +1,4 @@
-from sqlalchemy import select, update, asc, desc, text, delete, func
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
@@ -9,12 +9,12 @@ from schemas.parsers_schemas import Item
 
 
 
-async def get_oldest_task() ->models.Task:
+async def get_oldest_task() ->models.TaskModel:
     async with database.get_db() as session:
         query = (
-            select(models.Task)
-            .where(models.Task.status == db_schemas.TaskStatus.pending)
-            .order_by(models.Task.priority.desc(), models.Task.created_at.asc())
+            select(models.TaskModel)
+            .where(models.TaskModel.status == db_schemas.TaskStatus.pending)
+            .order_by(models.TaskModel.priority.desc(), models.TaskModel.created_at.asc())
             .limit(1)
             .with_for_update(skip_locked=True)
         )
@@ -57,8 +57,8 @@ async def consume_actual_cookie(market_place: db_schemas.MarketPlace):
 async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schemas.TaskStatus, total: int = 0):
 
     query = (
-        update(models.Task)
-        .where(models.Task.id == task_id)
+        update(models.TaskModel)
+        .where(models.TaskModel.id == task_id)
         .values(
             status=status,
             total_found=total,
@@ -67,33 +67,6 @@ async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schem
     )
 
     await session.execute(query)
-
-async def create_task(task: db_schemas.CreateTaskSchema):
-    async with database.get_db() as session:
-        query = (
-            insert(models.Task)
-            .values(
-                user_id=task.user_id,
-                source=task.source,
-                type=task.task_type,
-                payload=task.payload.model_dump()
-            ).returning(models.Task)
-        )
-
-        result = await session.execute(query)
-        created_task = result.scalar_one_or_none()
-        return created_task
-
-async def create_user(user_schema: db_schemas.UserSchema):
-    async with database.get_db() as session:
-        query = (
-            insert(models.User)
-            .values(**user_schema.model_dump(exclude={'id', 'created_at'})).returning(models.User)
-        )
-
-        result = await session.execute(query)
-        created_user = result.scalar_one_or_none()
-        return created_user
 
 
 async def save_batch(batch: list[Item], task_id: UUID):
@@ -105,11 +78,11 @@ async def save_batch(batch: list[Item], task_id: UUID):
 
         product_ids = [p['id'] for p in product_mappings]
 
-        insert_query = insert(models.Product).values(product_mappings)
+        insert_query = insert(models.ProductModel).values(product_mappings)
 
         update_dict = {
             col.name: insert_query.excluded[col.name]
-            for col in models.Product.__table__.columns
+            for col in models.ProductModel.__table__.columns
             if col.name not in ['id', 'created_at']
         }
 
@@ -129,7 +102,7 @@ async def save_batch(batch: list[Item], task_id: UUID):
         await session.execute(tp_insert)
 
         delete_sizes_query = (
-            delete(models.ProductSize).where(models.ProductSize.product_id.in_(product_ids))
+            delete(models.ProductSizeModel).where(models.ProductSizeModel.product_id.in_(product_ids))
         )
         await session.execute(delete_sizes_query)
 
@@ -143,7 +116,7 @@ async def save_batch(batch: list[Item], task_id: UUID):
 
         if all_sizes_mapping:
             await session.execute(
-                insert(models.ProductSize).values(all_sizes_mapping)
+                insert(models.ProductSizeModel).values(all_sizes_mapping)
             )
 
 

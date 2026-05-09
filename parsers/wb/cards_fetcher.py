@@ -17,7 +17,7 @@ from db import models
 
 
 class WBCardsFetcher(BaseParser):
-    def __init__(self, task: models.Task):
+    def __init__(self, task: models.TaskModel):
         if task.type != TaskType.fetch_cards:
             raise ValueError(f'{self.__class__.__name__} ожидает {TaskType.fetch_cards}. Получил {task.type}' )
         self.db_task = task

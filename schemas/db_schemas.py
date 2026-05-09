@@ -43,21 +43,3 @@ class TaskStatus(enum.Enum):
     failed = "failed"
 
 
-
-class CreateTaskSchema(BaseModel):
-    user_id: uuid.UUID = Field()
-    source: MarketPlace = Field(default=MarketPlace.wildberries.value)
-    payload: Union[FetchCardsPayload, TrackPositionPayload] = Field()
-
-    @property
-    def task_type(self) -> TaskType:
-        return self.payload.type
-
-
-class UserSchema(BaseModel):
-    id: uuid.UUID = Field(default=uuid.uuid4)
-    username: str = Field()
-    email: EmailStr = Field()
-    is_active: bool = Field(default=True)
-    created_at: datetime = Field(default=datetime.now(timezone.utc))
-
