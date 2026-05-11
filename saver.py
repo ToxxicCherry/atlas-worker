@@ -2,6 +2,7 @@ from loguru import logger
 from schemas.parsers_schemas import Item, ParseResult, FetchCardsResult, Payload
 from db.database import get_db
 from db.db_actions import set_task_status, save_batch
+from schemas.db_schemas import TaskStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 from itertools import islice
 from typing import Iterable
@@ -26,14 +27,17 @@ class Saver:
         processed_count = 0
         payload = parse_result.payload
 
-        for batch in self.chunked_iterable(payload.items, batch_size):
-            try:
-                await save_batch(session ,batch, parse_result.task_id)
-                processed_count += len(batch)
-                logger.success(f"Сохранено {processed_count} из {len(payload.items)}")
-            except Exception as e:
-                logger.exception(e)
-                logger.error(f'Ошибка в батче {e}')
+        try:
+            for batch in self.chunked_iterable(payload.items, batch_size):
+                    await save_batch(session ,batch, parse_result.task_id)
+                    processed_count += len(batch)
+                    logger.success(f"Сохранено {processed_count} из {len(payload.items)}")
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f'Ошибка в батче {e}')
+            parse_result.status = TaskStatus.failed
+            parse_result.error_message = str(e)
+
 
 
 
@@ -46,7 +50,6 @@ class Saver:
             if isinstance(payload, FetchCardsResult):
                 total_found = len(payload.items)
                 await self.fetch_cards_save(session, parse_result)
-
 
 
             await set_task_status(session, parse_result.task_id, parse_result.status, total_found, parse_result.error_message)
