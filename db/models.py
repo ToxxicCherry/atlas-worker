@@ -84,7 +84,8 @@ class Cookie(Base):
 
     id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid4, server_default=text("gen_random_uuid()"))
     source = Column(SQLEnum(db_schemas.MarketPlace, name="market_place"), nullable=False, default=db_schemas.MarketPlace.wildberries)
-    value = Column(Text, nullable=False)
+    x_wbaas_token = Column(Text, nullable=False)
+    user_agent = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

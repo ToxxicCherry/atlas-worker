@@ -44,13 +44,13 @@ async def consume_actual_cookie(market_place: db_schemas.MarketPlace):
         stmt = (
             delete(models.Cookie)
             .where(models.Cookie.id == target_cookie_id)
-            .returning(models.Cookie.value)
+            .returning(models.Cookie.x_wbaas_token, models.Cookie.user_agent)
         )
 
         result = await session.execute(stmt)
-        cookie_value = result.scalar_one_or_none()
+        row = result.fetchone()
 
-        return cookie_value
+        return {'x_wbaas_token': row.x_wbaas_token, 'user_agent': row.user_agent}
 
 
 

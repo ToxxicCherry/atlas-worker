@@ -47,16 +47,17 @@ class WBClient:
             async with self.lock:
                 logger.info('Иду в бд за куками')
                 while True:
-                    cookie_value = await db_actions.consume_actual_cookie(market_place=db_schemas.MarketPlace.wildberries)
+                    cookie_data = await db_actions.consume_actual_cookie(market_place=db_schemas.MarketPlace.wildberries)
 
-                    if cookie_value is None:
+                    if cookie_data is None:
                         logger.info('Нет кук в базе. Повторяю запрос')
                         await asyncio.sleep(5)
                         continue
                     break
 
                 logger.success('Получил куки. Продолжаю работу')
-                self.client.cookies.update({self.cookie_key: cookie_value})
+                self.client.cookies[self.cookie_key] = cookie_data[self.cookie_key]
+                self.client.headers['user-agent'] = cookie_data['user_agent']
 
             self.ready_event.set()
         else:
