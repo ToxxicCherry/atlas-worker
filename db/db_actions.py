@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from db import models, database
 from loguru import logger
-from schemas import db_schemas
+from schemas import db_schemas, tp
 from schemas.parsers_schemas import Item
 
 
@@ -70,7 +70,7 @@ async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schem
     await session.execute(query)
 
 
-async def save_batch(session: AsyncSession,batch: list[Item], task_id: UUID):
+async def save_fetch_cards_batch(session: AsyncSession, batch: list[Item], task_id: UUID):
 
     product_mappings = [
         item.model_dump(exclude={'sizes'}, by_alias=False)
@@ -122,6 +122,9 @@ async def save_batch(session: AsyncSession,batch: list[Item], task_id: UUID):
 
     await session.flush()
 
+
+async def save_track_positions_batch(session: AsyncSession, batch: list[tp.Position], task_id: UUID):
+    pass
 
 
 

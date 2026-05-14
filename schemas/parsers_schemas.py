@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Union, Literal, Optional
 from schemas.db_schemas import TaskType, TaskStatus
 from copy import copy
 from uuid import UUID
+from .track_positions import Position
 
 
 class Filter(BaseModel):
@@ -125,9 +126,14 @@ class FetchCardsResult(BaseModel):
     type: Literal[TaskType.fetch_cards] = TaskType.fetch_cards
     items: List[Item] = Field(default_factory=list)
 
+class TrackPositionsResult(BaseModel):
+    type: Literal[TaskType.track_positions] = TaskType.track_positions
+    positions: List[Position] = Field(default_factory=list)
+    items: List[Item] = Field(default_factory=list)
 
 Payload = Union[
     FetchCardsResult,
+    TrackPositionsResult,
 
 ]
 class ParseResult(BaseModel):

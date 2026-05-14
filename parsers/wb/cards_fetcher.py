@@ -2,8 +2,6 @@ import asyncio
 import random
 import math
 from loguru import logger
-from clients.wb_client import WBClient
-from typing import Callable
 from schemas.parsers_schemas import FilterData, Filter, TaskForWorker, Item
 from schemas.db_schemas import TaskType, TaskStatus
 from schemas.parsers_schemas import FetchCardsResult, ParseResult
@@ -20,18 +18,11 @@ class WBCardsFetcher(BaseParser):
     def __init__(self, task: models.TaskModel):
         if task.type != TaskType.fetch_cards:
             raise ValueError(f'{self.__class__.__name__} ожидает {TaskType.fetch_cards}. Получил {task.type}' )
-        self.db_task = task
-        self.limit = 5000
-        self.max_pages = 50
-        self.max_cards_on_page = 100
         self.black_list_total = {412412, 107797, 125594, 14189, 143186, 8822, 224502, 225044, 8806, 129156}
         self.max_same_filters = 20
-        self.max_workers = 40
-        self.queue = asyncio.Queue()
-        self.workers_result = []
         self.total_counter = Counter()
         self.all_filters: list[list[Filter]] = None
-        self.api = WBClient(query=task.payload['query'], max_connections=self.max_workers)
+        super().__init__(task)
 
 
     async def fetch_filters_with_all_goods(self) -> list[Filter]:
@@ -176,19 +167,6 @@ class WBCardsFetcher(BaseParser):
 
                 await asyncio.sleep(random.uniform(0.2, 0.7))
 
-    async def run_workers(self, worker: Callable) -> None:
-
-        self.workers_result = []
-        worker_tasks = []
-        workers = min(self.queue.qsize(), self.max_workers)
-        for i in range(1, workers + 1):
-            w = asyncio.create_task(worker(f'Worker-{i}'))
-            worker_tasks.append(w)
-
-        await self.queue.join()
-
-        for w in worker_tasks:
-            w.cancel()
 
     async def find_all_filters(self):
         full_key_filters = await self.fetch_filters_with_all_goods()
@@ -276,7 +254,6 @@ class WBCardsFetcher(BaseParser):
         best_filter = self.all_filters.pop()
         self.all_filters.sort(key=lambda f: len(f), reverse=True)
         best_filter = await self.add_another_filter(best_filter=best_filter)
-        #best_filter = await self.merge_filters_by_id(best_filter)
 
         return best_filter
 

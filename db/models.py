@@ -36,6 +36,7 @@ class TaskModel(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user: Mapped["UserModel"] = relationship('UserModel', back_populates='tasks')
+    positions: Mapped[list["PositionModel"]] = relationship("PositionModel", back_populates="task")
 
 
 class ProductSizeModel(Base):
@@ -69,6 +70,7 @@ class ProductModel(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
     sizes = relationship('ProductSizeModel', back_populates='products', cascade='all, delete-orphan')
+    positions: Mapped[list["PositionModel"]] = relationship("PositionModel", back_populates="product")
 
 
 class TaskProduct(Base):
@@ -87,6 +89,21 @@ class Cookie(Base):
     x_wbaas_token = Column(Text, nullable=False)
     user_agent = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PositionModel(Base):
+    __tablename__ = 'positions'
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, server_default=text("gen_random_uuid()"))
+    task_id: Mapped[UUID] = mapped_column(ForeignKey("tasks.id", ondelete='CASCADE'), nullable=False)
+    product_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    positon: Mapped[int] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    task: Mapped['TaskModel'] = relationship('TaskModel', back_populates='positions')
+    product: Mapped['ProductModel'] = relationship('ProductModel', back_populates='positions')
+
+
 
 
 
