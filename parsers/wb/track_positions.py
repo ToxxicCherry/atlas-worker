@@ -74,18 +74,9 @@ class PositionsFetcher(BaseParser):
         try:
             await self.api.change_cookie()
             await self.get_blacklist_total()
-
-            for i in range(1, 6):
-                total = await self.fetch_total_by_query()
-                if total in self.black_list_totals:
-                    logger.warning(f'{total=} для {self.__class__.__name__}. Иду еще раз за тоталом')
-                    await asyncio.sleep(0.5 * i)
-                    continue
-                break
-            else:
-                raise Exception(f'Не удалось получить нормальный тотал {self.__class__.__name__}')
-
+            total = await self.fetch_total_by_query()
             await self.prepare_queue_for_catalog(total)
+
             self.positions = []
             self.items = []
             await self.run_workers(self.track_positions_worker)

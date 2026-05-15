@@ -36,8 +36,17 @@ class BaseParser(ABC):
     async def fetch_total_by_query(self) -> int:
         add_params = {'resultset': 'filters'}
 
-        response_data = await self.api.fetch(add_params=add_params)
-        total = response_data.get('data', {}).get('total', 0)
+        for attempt in range(1, 6):
+            response_data = await self.api.fetch(add_params=add_params)
+            total = response_data.get('data', {}).get('total', 0)
+            if total in self.black_list_totals:
+                logger.warning(f'{total=} для {self.__class__.__name__}. Иду еще раз за тоталом')
+                await asyncio.sleep(0.5 * attempt)
+                continue
+            break
+        else:
+            raise Exception(f'Не удалось получить нормальный тотал {self.__class__.__name__}')
+
         return total
 
 
