@@ -18,7 +18,6 @@ class WBCardsFetcher(BaseParser):
     def __init__(self, task: models.TaskModel):
         if task.type != TaskType.fetch_cards:
             raise ValueError(f'{self.__class__.__name__} ожидает {TaskType.fetch_cards}. Получил {task.type}' )
-        self.black_list_total = {412412, 107797, 125594, 14189, 143186, 8822, 224502, 225044, 8806, 129156}
         self.max_same_filters = 20
         self.total_counter = Counter()
         self.all_filters: list[list[Filter]] = None
@@ -68,7 +67,7 @@ class WBCardsFetcher(BaseParser):
 
         most_common_total, counts = self.total_counter.most_common(1)[0]
         if counts >= 5:
-            self.black_list_total.add(most_common_total)
+            self.black_list_totals.add(most_common_total)
             del self.total_counter[most_common_total]
             return most_common_total
 
@@ -91,7 +90,7 @@ class WBCardsFetcher(BaseParser):
                 response_data = await self.api.fetch(add_params=params)
                 total = response_data.get('data', {}).get('total', 0)
 
-                if total in self.black_list_total:
+                if total in self.black_list_totals:
 
                     logger.info(f'{name}. Тотал для {params=} {total=}. Вернул задачу в очередь.')
                     task.retries -= 1
@@ -213,9 +212,9 @@ class WBCardsFetcher(BaseParser):
 
         #Перепроверим проскочившие black list тоталы
         for i in range(len(self.all_filters)):
-            bad_total_filters = list(filter(lambda x: x.total in self.black_list_total, self.all_filters[i]))
+            bad_total_filters = list(filter(lambda x: x.total in self.black_list_totals, self.all_filters[i]))
             if bad_total_filters:
-                self.all_filters[i] = list(filter(lambda x: x.total not in self.black_list_total, self.all_filters[i]))
+                self.all_filters[i] = list(filter(lambda x: x.total not in self.black_list_totals, self.all_filters[i]))
                 self.all_filters[i].extend(
                     await self.add_local_totals_to_filters_list(bad_total_filters)
                 )
@@ -223,7 +222,7 @@ class WBCardsFetcher(BaseParser):
         #Если они все же остались, заменим их на self.limit
         for filters in self.all_filters:
             for _filter in filters:
-                if _filter.total in self.black_list_total:
+                if _filter.total in self.black_list_totals:
                     _filter.total = self.limit
 
 
@@ -249,6 +248,14 @@ class WBCardsFetcher(BaseParser):
         return await self.add_another_filter(best_filter)
 
     async def create_best_filter(self):
+        logger.info('Проверяю общий total без фильтров')
+        total = await self.fetch_total_by_query()
+        if total <= self.limit:
+            logger.info(f'{total=} <= {self.limit=}; Пропускаю построение фильтров')
+            best_filter = [Filter(params={}, total=total)]
+            return best_filter
+
+        logger.info(f'{total=} > {self.limit=}; Начинаю строить фильтры')
         await self.find_all_filters()
         await self.add_total_to_all_filters()
         best_filter = self.all_filters.pop()
@@ -271,14 +278,17 @@ class WBCardsFetcher(BaseParser):
 
     async def parse(self) -> ParseResult:
         try:
+            await self.get_blacklist_total()
             await self.api.change_cookie()
             best_filter = await self.create_best_filter()
             await self.prepare_queue_for_catalog(best_filter)
             await self.run_workers(self.catalog_articles_worker)
 
-            logger.debug(self.black_list_total)
+            logger.debug(self.black_list_totals)
 
             result = self.delete_duplicates(self.workers_result)
+
+            await self.save_blacklist_totals()
 
             return ParseResult(
                 task_id=self.db_task.id,

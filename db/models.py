@@ -90,6 +90,11 @@ class Cookie(Base):
     user_agent = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class BlackListTotal(Base):
+    __tablename__ = 'blacklist_totals'
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    total: Mapped[int] = mapped_column(BigInteger, unique=True)
+
 
 class PositionModel(Base):
     __tablename__ = 'positions'

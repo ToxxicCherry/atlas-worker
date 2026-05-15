@@ -53,6 +53,21 @@ async def consume_actual_cookie(market_place: db_schemas.MarketPlace):
         return {'x_wbaas_token': row.x_wbaas_token, 'user_agent': row.user_agent}
 
 
+async def insert_blacklist_totals(session: AsyncSession, totals: list[int]):
+    mapped_totals = [{'total': total} for total in totals]
+
+    query = (
+        insert(models.BlackListTotal).values(mapped_totals).on_conflict_do_nothing(index_elements=[models.BlackListTotal.total])
+    )
+
+    await session.execute(query)
+
+async def get_blacklist_totals(session: AsyncSession) -> set[int]:
+    query = select(models.BlackListTotal.total)
+    result = await session.execute(query)
+    return set(result.scalars().all())
+
+
 
 async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schemas.TaskStatus, total: int = 0, error_message = None):
 

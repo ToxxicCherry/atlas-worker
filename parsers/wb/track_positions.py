@@ -27,13 +27,6 @@ class PositionsFetcher(BaseParser):
         super().__init__(task)
 
 
-    async def fetch_total_by_query(self) -> int:
-        add_params = {'resultset': 'filters'}
-
-        response_data = await self.api.fetch(add_params=add_params)
-        total = response_data.get('data', {}).get('total', 0)
-        return total
-
     async def prepare_queue_for_catalog(self, total: int) -> None:
         pages = min(math.ceil(total / self.max_cards_on_page), self.max_pages)
 
