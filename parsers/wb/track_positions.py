@@ -1,8 +1,9 @@
-from schemas.parsers_schemas import ParseResult, TrackPositionsResult, Item
+from schemas.parsers_schemas import ParseResult, TrackPositionsResult, ProductSchema, SizeSchema
 from schemas.db_schemas import TaskType, TrackPositionPayload, TaskStatus
 from schemas.track_positions import Position
 from ..base import BaseParser
 from db import models
+from db.db_actions import pre_save_products
 from pydantic import TypeAdapter
 from loguru import logger
 from typing import List
@@ -28,7 +29,7 @@ class PositionsFetcher(BaseParser):
 
 
     async def prepare_queue_for_catalog(self, total: int) -> None:
-        pages = min(math.ceil(total / self.max_cards_on_page), self.max_pages)
+        pages = min(math.ceil(total / self.max_cards_on_page), self.max_pages) + 1 # +1 на всякий случай, на запас
 
         for page in range(1, pages + 1):
             add_params = {'resultset': 'catalog', 'page': page}
@@ -44,7 +45,7 @@ class PositionsFetcher(BaseParser):
                 response_data = await self.api.fetch(add_params=add_params)
                 products = response_data.get('products', [])
 
-                adapter: TypeAdapter = TypeAdapter(List[Item])
+                adapter: TypeAdapter = TypeAdapter(List[ProductSchema])
                 validated_result = adapter.validate_python(products)
                 self.items.extend(validated_result)
 
@@ -61,6 +62,7 @@ class PositionsFetcher(BaseParser):
                                 position=article_position,
                             )
                         )
+                        self.payload.articles.remove(article)
             except (Exception, BaseException) as e:
                 logger.error(f'{name}. Ошибка при обработке {add_params}: {e}')
             finally:
@@ -81,6 +83,22 @@ class PositionsFetcher(BaseParser):
             self.items = []
             await self.run_workers(self.track_positions_worker)
             await self.save_blacklist_totals()
+
+            for article in self.payload.articles:
+                self.items.append(
+                    ProductSchema(
+                        id=article,
+                        sizes=[SizeSchema()]
+                    )
+                )
+
+                self.positions.append(
+                    Position(
+                        product_id=article,
+                        position=self.limit,
+                    )
+                )
+
 
             return ParseResult(
                 task_id=self.db_task.id,

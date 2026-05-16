@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from db import models, database
 from loguru import logger
 from schemas import db_schemas, tp
-from schemas.parsers_schemas import Item
+from schemas.parsers_schemas import ProductSchema
 
 
 
@@ -85,7 +85,7 @@ async def set_task_status(session: AsyncSession, task_id: UUID, status: db_schem
     await session.execute(query)
 
 
-async def save_fetch_cards_batch(session: AsyncSession, batch: list[Item], task_id: UUID):
+async def save_fetch_cards_batch(session: AsyncSession, batch: list[ProductSchema], task_id: UUID):
 
     product_mappings = [
         item.model_dump(exclude={'sizes'}, by_alias=False)
@@ -150,6 +150,17 @@ async def save_track_positions_batch(session: AsyncSession, batch: list[tp.Posit
     insert_query = insert(models.PositionModel).values(positions_mappings).on_conflict_do_nothing()
     await session.execute(insert_query)
     await session.flush()
+
+
+async def pre_save_products(session: AsyncSession, product_ids: list[int]):
+    mapping_ids = [
+        {'product_id': product_id}
+        for product_id in product_ids
+    ]
+    query = (
+        insert(models.ProductModel).values(mapping_ids).on_conflict_do_nothing()
+    )
+    await session.execute(query)
 
 
 

@@ -2,7 +2,7 @@ import asyncio
 import random
 import math
 from loguru import logger
-from schemas.parsers_schemas import FilterData, Filter, TaskForWorker, Item
+from schemas.parsers_schemas import FilterData, Filter, TaskForWorker, ProductSchema
 from schemas.db_schemas import TaskType, TaskStatus
 from schemas.parsers_schemas import FetchCardsResult, ParseResult
 from parsers.base import BaseParser
@@ -154,7 +154,7 @@ class WBCardsFetcher(BaseParser):
                     logger.info(f'{params=}. Текущая страница: {current_page}. Всего страниц: {max_pages}. Пропускаю')
                     continue
 
-                adapter: TypeAdapter = TypeAdapter(List[Item])
+                adapter: TypeAdapter = TypeAdapter(List[ProductSchema])
                 validated_result = adapter.validate_python(products)
                 self.workers_result.extend(validated_result)
 
@@ -272,7 +272,7 @@ class WBCardsFetcher(BaseParser):
                 await self.queue.put(TaskForWorker(filter=Filter(params=params)))
 
     @staticmethod
-    def delete_duplicates(items: list[Item]) -> list[Item]:
+    def delete_duplicates(items: list[ProductSchema]) -> list[ProductSchema]:
         result = list(unique_everseen(items, key=lambda item: item.id))
         return result
 

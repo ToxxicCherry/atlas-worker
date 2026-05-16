@@ -67,11 +67,11 @@ class TaskForWorker(BaseModel):
     filter: Filter = Field(default_factory=Filter)
     retries: int = Field(default=5)
 
-class Size(BaseModel):
+class SizeSchema(BaseModel):
 
-    name: str = Field(serialization_alias='Размер')
-    price_basic: int = Field(serialization_alias='Цена до скидки')
-    price_product: int = Field(serialization_alias='Цена со скидкой')
+    name: str = Field(serialization_alias='Размер', default='empty')
+    price_basic: int = Field(serialization_alias='Цена до скидки', default=0)
+    price_product: int = Field(serialization_alias='Цена со скидкой', default=0)
 
     @computed_field(alias='Скидка руб.')
     @property
@@ -100,7 +100,7 @@ class Size(BaseModel):
 
         return new_data
 
-class Item(BaseModel):
+class ProductSchema(BaseModel):
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -108,28 +108,28 @@ class Item(BaseModel):
     )
 
     id: int = Field(serialization_alias='Артикул')
-    name: str = Field(serialization_alias='Название')
-    brand: str = Field(serialization_alias='Бренд')
-    brand_id: int = Field(serialization_alias='ID бренда')
-    subject_id: int = Field(description='ID категории', serialization_alias='ID категории')
-    sizes: List[Size] = Field(default_factory=list, serialization_alias='Размеры')
-    total_quantity: int = Field(serialization_alias='Количество на складе')
-    rating: float = Field(ge=0, le=5, serialization_alias='Рейтинг товара')
-    feedbacks: int = Field(serialization_alias='Количество отзывов')
-    supplier: str = Field(serialization_alias='Продавец')
-    supplier_id: int = Field(serialization_alias='ID продавца')
-    supplier_rating: float = Field(serialization_alias='Рейтинг продавца')
-    weight: float = Field(serialization_alias='Вес')
-    wh: int = Field(description='ID склада', serialization_alias='ID склада')
+    name: Optional[str] = Field(serialization_alias='Название', default=None)
+    brand: Optional[str] = Field(serialization_alias='Бренд', default=None)
+    brand_id: Optional[int] = Field(serialization_alias='ID бренда', default=None)
+    subject_id: Optional[int] = Field(description='ID категории', serialization_alias='ID категории', default=None)
+    sizes: List[SizeSchema] = Field(default_factory=list, serialization_alias='Размеры')
+    total_quantity: Optional[int] = Field(serialization_alias='Количество на складе', default=None)
+    rating: Optional[float] = Field(ge=0, le=5, serialization_alias='Рейтинг товара', default=None)
+    feedbacks: Optional[int] = Field(serialization_alias='Количество отзывов', default=None)
+    supplier: Optional[str] = Field(serialization_alias='Продавец', default=None)
+    supplier_id: Optional[int] = Field(serialization_alias='ID продавца', default=None)
+    supplier_rating: Optional[float] = Field(serialization_alias='Рейтинг продавца', default=None)
+    weight: Optional[float] = Field(serialization_alias='Вес', default=None)
+    wh: Optional[int] = Field(description='ID склада', serialization_alias='ID склада', default=None)
 
 class FetchCardsResult(BaseModel):
     type: Literal[TaskType.fetch_cards] = TaskType.fetch_cards
-    items: List[Item] = Field(default_factory=list)
+    items: List[ProductSchema] = Field(default_factory=list)
 
 class TrackPositionsResult(BaseModel):
     type: Literal[TaskType.track_positions] = TaskType.track_positions
     positions: List[Position] = Field(default_factory=list)
-    items: List[Item] = Field(default_factory=list)
+    items: List[ProductSchema] = Field(default_factory=list)
 
 Payload = Union[
     FetchCardsResult,

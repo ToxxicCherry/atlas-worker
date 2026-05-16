@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID as SQLUUID, JSONB
 from schemas import db_schemas
 from uuid import UUID, uuid4
 from datetime import datetime
+from typing import Optional
 
 Base = declarative_base()
 
@@ -54,22 +55,22 @@ class ProductModel(Base):
     __tablename__ = 'products'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    name: Mapped[str]
-    brand: Mapped[str]
-    brand_id: Mapped[int] = mapped_column(BigInteger)
-    subject_id: Mapped[int] = mapped_column(BigInteger)
-    total_quantity: Mapped[int]
-    rating: Mapped[float]
-    feedbacks: Mapped[int]
-    supplier: Mapped[str]
-    supplier_id: Mapped[int] = mapped_column(BigInteger)
-    supplier_rating: Mapped[float]
-    weight: Mapped[float]
-    wh: Mapped[int] = mapped_column(BigInteger)
+    name: Mapped[Optional[str]]
+    brand: Mapped[Optional[str]]
+    brand_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    subject_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    total_quantity: Mapped[Optional[int]]
+    rating: Mapped[Optional[float]]
+    feedbacks: Mapped[Optional[int]]
+    supplier: Mapped[Optional[str]]
+    supplier_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    supplier_rating: Mapped[Optional[float]]
+    weight: Mapped[Optional[float]]
+    wh: Mapped[Optional[int]] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
-    sizes = relationship('ProductSizeModel', back_populates='products', cascade='all, delete-orphan')
+    sizes: Mapped['ProductSizeModel'] = relationship('ProductSizeModel', back_populates='products', cascade='all, delete-orphan')
     positions: Mapped[list["PositionModel"]] = relationship("PositionModel", back_populates="product")
 
 
