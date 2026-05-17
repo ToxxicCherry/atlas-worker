@@ -1,0 +1,22 @@
+# Игнорируем виртуальное окружение
+.venv/
+venv/
+env/
+.env
+downloaded_files/
+
+# Игнорируем настройки сред разработки (PyCharm, VS Code)
+.idea/
+.vscode/
+
+# Игнорируем кэш Python
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Игнорируем логи и системные файлы
+*.log
+.DS_Store
+.git/
+.gitignore
